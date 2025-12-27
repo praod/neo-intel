@@ -6,9 +6,19 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase environment variables')
+    // Return a response that allows the request to continue
+    // This prevents the middleware from crashing
+    return supabaseResponse
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -32,21 +42,28 @@ export async function updateSession(request: NextRequest) {
   // middleware and Server Component/Route Handler see different session
   // data!
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/signup') &&
-    !request.nextUrl.pathname.startsWith('/api') &&
-    request.nextUrl.pathname !== '/'
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    if (
+      !user &&
+      !request.nextUrl.pathname.startsWith('/login') &&
+      !request.nextUrl.pathname.startsWith('/signup') &&
+      !request.nextUrl.pathname.startsWith('/api') &&
+      request.nextUrl.pathname !== '/'
+    ) {
+      // no user, potentially respond by redirecting the user to the login page
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+  } catch (error) {
+    // If there's an error with authentication, log it and allow the request to continue
+    // This prevents the middleware from crashing the entire application
+    console.error('Error in middleware authentication check:', error)
+    // Allow the request to proceed - the page can handle authentication errors
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
