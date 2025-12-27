@@ -1,25 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupForm() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const [message, setMessage] = useState<string | null>(null)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setMessage(null)
     setLoading(true)
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -35,14 +36,23 @@ export default function SignupForm() {
         return
       }
 
-      // Refresh the router to update server-side auth state first
-      router.refresh()
-      
-      // Small delay to ensure the session cookie is properly set
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Navigate to dashboard (which will redirect to onboarding for new users)
-      router.push('/dashboard')
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        // Email confirmation is required
+        setMessage('Check your email for a confirmation link to complete your signup.')
+        setLoading(false)
+        return
+      }
+
+      // If session exists, redirect to dashboard
+      if (data.session) {
+        window.location.href = '/dashboard'
+        return
+      }
+
+      // Fallback message
+      setMessage('Account created! Please check your email to confirm your account.')
+      setLoading(false)
     } catch (err) {
       console.error('Signup error:', err)
       setError('An unexpected error occurred. Please try again.')
@@ -55,6 +65,11 @@ export default function SignupForm() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
+        </div>
+      )}
+      {message && (
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+          {message}
         </div>
       )}
       <div className="rounded-md shadow-sm space-y-4">

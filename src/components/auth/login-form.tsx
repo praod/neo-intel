@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginForm() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -48,25 +46,9 @@ export default function LoginForm() {
         return
       }
 
-      // Refresh the router to update server-side auth state first
-      router.refresh()
-      
-      // Small delay to ensure the session cookie is properly set
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Navigate to dashboard - use window.location as fallback if router.push fails
-      try {
-        router.push('/dashboard')
-        // Fallback: if navigation doesn't happen within 2 seconds, use window.location
-        setTimeout(() => {
-          if (window.location.pathname === '/login') {
-            window.location.href = '/dashboard'
-          }
-        }, 2000)
-      } catch (navError) {
-        console.error('Navigation error:', navError)
-        window.location.href = '/dashboard'
-      }
+      // Use full page navigation to ensure cookies are properly sent to the server
+      // This is more reliable than router.push for auth flows
+      window.location.href = '/dashboard'
     } catch (err) {
       clearTimeout(timeoutId)
       console.error('Login error:', err)
