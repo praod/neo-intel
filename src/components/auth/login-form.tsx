@@ -16,15 +16,34 @@ export default function LoginForm() {
     setError(null)
     setLoading(true)
 
+    // Safety timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.error('Login timeout - resetting loading state')
+      setLoading(false)
+      setError('Request timed out. Please try again.')
+    }, 10000) // 10 second timeout
+
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+      const response = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) {
-        setError(error.message)
+      clearTimeout(timeoutId)
+
+      // Check for error in response
+      if (response.error) {
+        console.error('Login error:', response.error)
+        setError(response.error.message || 'Invalid email or password. Please try again.')
+        setLoading(false)
+        return
+      }
+
+      // Check if we got a session
+      if (!response.data?.session) {
+        console.error('No session returned from login', response)
+        setError('Login failed. No session created. Please try again.')
         setLoading(false)
         return
       }
@@ -35,11 +54,23 @@ export default function LoginForm() {
       // Small delay to ensure the session cookie is properly set
       await new Promise(resolve => setTimeout(resolve, 100))
       
-      // Navigate to dashboard
-      router.push('/dashboard')
+      // Navigate to dashboard - use window.location as fallback if router.push fails
+      try {
+        router.push('/dashboard')
+        // Fallback: if navigation doesn't happen within 2 seconds, use window.location
+        setTimeout(() => {
+          if (window.location.pathname === '/login') {
+            window.location.href = '/dashboard'
+          }
+        }, 2000)
+      } catch (navError) {
+        console.error('Navigation error:', navError)
+        window.location.href = '/dashboard'
+      }
     } catch (err) {
+      clearTimeout(timeoutId)
       console.error('Login error:', err)
-      setError('An unexpected error occurred. Please try again.')
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.')
       setLoading(false)
     }
   }
