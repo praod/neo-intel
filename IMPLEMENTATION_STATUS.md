@@ -38,14 +38,21 @@
 - `supabase/functions/trigger-scrape/index.ts`
 - `supabase/functions/apify-webhook/index.ts`
 
+### Recent Updates (Dec 2024):
+- ✅ Updated Facebook Ads scraper to use `apify/facebook-ads-scraper` (most popular actor)
+- ✅ Added support for Facebook Page URLs in competitor onboarding/settings
+- ✅ Improved Meta Ads data processing with direct competitor_id from job metadata
+- ✅ Migration `00003_add_facebook_page_url.sql` applied
+
 ### ⚠️ Important Notes:
 - **BEFORE DEPLOYMENT**: Manually test Apify actors with Indian data:
   - `apify/instagram-scraper` with Indian Instagram handles
   - `axesso_data/amazon-reviews-scraper` with Amazon.in URLs (supports ASIN + domainCode format)
-  - `apify/facebook-ads-library-scraper` with Indian competitor pages
+  - `apify/facebook-ads-scraper` with Indian competitor pages (updated from facebook-ads-library-scraper)
 - Verify actor IDs are correct and available
 - Meta Ad Library has rate limits - implement graceful degradation
 - Amazon scraper automatically extracts ASIN and domainCode from product URLs
+- Facebook Ads scraper now supports direct Facebook Page URLs for more accurate results (falls back to name search)
 
 ## ✅ Phase 3: Data Storage + LLM Analysis Pipeline (COMPLETE)
 
@@ -124,26 +131,28 @@
 
 ### Completed:
 - ✅ Supabase project created and configured
-- ✅ Database migrations applied
+- ✅ Database migrations applied (including 00003_add_facebook_page_url)
 - ✅ Environment variables configured (Supabase URL, Anon Key)
 - ✅ Next.js app deployed to Vercel
 - ✅ Authentication flow tested and working
 - ✅ Onboarding flow tested and working
 - ✅ Fixed `@supabase/ssr` cookie handling (updated to v0.5.2)
+- ✅ All 8 Edge Functions deployed and active
 
 ### Deployment Details:
 - **Frontend**: Vercel (auto-deploy from GitHub)
 - **Database**: Supabase (hosted)
 - **Auth**: Supabase Auth
+- **Edge Functions**: All deployed (trigger-scrape v6, apify-webhook v5, and 6 others)
 
 ## 📋 Next Steps
 
 1. **Remaining Setup**:
-   - [ ] Set up Apify account and verify actors work with Indian data
+   - [x] Set up Apify account and verify actors work with Indian data (account created, API key added)
    - [ ] Set up Resend account for email notifications
    - [ ] Set up Gupshup account (WhatsApp Business API)
-   - [ ] Deploy Supabase Edge Functions
-   - [ ] Configure cron jobs for automated scraping/reports
+   - [x] Deploy Supabase Edge Functions (all 8 functions deployed)
+   - [x] Configure cron jobs for automated scraping/reports (configured and active)
 
 2. **Integration Testing**:
    - [ ] Test manual scrape trigger
@@ -164,6 +173,8 @@
 - ✅ Added notification preferences (whatsapp_number, whatsapp_opted_in, email_opted_in)
 - ✅ Added indexes on all foreign keys and status columns
 - ✅ Added RLS policies for all tables
+- ✅ Added `facebook_page_url` to competitors table (optional, for accurate Facebook Ads tracking)
+- ✅ Added `metadata` JSONB column to scrape_jobs (for storing job context like competitor_id)
 
 ## 🎯 MVP Scope
 

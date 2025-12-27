@@ -37,6 +37,7 @@ export async function POST(request: Request) {
         brand_id: brand.id,
         name: c.name,
         instagram_handle: c.instagramHandle,
+        facebook_page_url: c.facebookPageUrl || null,
       }))
 
       const { error: competitorsError } = await supabase

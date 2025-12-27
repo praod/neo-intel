@@ -20,10 +20,10 @@ Deno.serve(async (req) => {
 
     const supabase = createSupabaseClient()
 
-    // Find the scrape job
+    // Find the scrape job (include metadata for competitor_id)
     const { data: job, error: jobError } = await supabase
       .from('scrape_jobs')
-      .select('*, brands!inner(*)')
+      .select('*, metadata, brands!inner(*)')
       .eq('apify_run_id', actorRunId)
       .single()
 
@@ -229,41 +229,37 @@ async function processAmazonData(supabase: any, items: any[], job: any) {
 }
 
 async function processMetaAdsData(supabase: any, items: any[], job: any) {
-  const brandId = job.brand_id
-
-  // Find competitors for this brand
-  const { data: competitors } = await supabase
-    .from('competitors')
-    .select('id, instagram_handle, name')
-    .eq('brand_id', brandId)
+  // Get competitor_id from job metadata (set by trigger-scrape)
+  const competitorId = job.metadata?.competitor_id
+  
+  if (!competitorId) {
+    console.error('No competitor_id found in job metadata for meta_ads job:', job.id)
+    return
+  }
 
   for (const item of items) {
-    // Match ad to competitor (this may need adjustment based on actual Apify response)
-    const competitor = competitors?.find((c: any) =>
-      item.pageName?.toLowerCase().includes(c.name.toLowerCase()) ||
-      item.pageName?.toLowerCase().includes(c.instagram_handle.toLowerCase())
+    // Handle different output formats from apify/facebook-ads-scraper
+    // Common fields: id, pageName, adCreativeBody, adCreativeLinkTitle, etc.
+    const adId = item.adArchiveId || item.adId || item.id || `${competitorId}-${Date.now()}-${Math.random()}`
+    
+    await supabase.from('meta_ads').upsert(
+      {
+        competitor_id: competitorId,
+        ad_id: adId,
+        page_name: item.pageName || item.pageInfo?.name || item.advertiserName,
+        ad_creative_body: item.adCreativeBody || item.body || item.snapshot?.body?.text,
+        ad_creative_link_title: item.adCreativeLinkTitle || item.title || item.snapshot?.title,
+        ad_creative_link_caption: item.adCreativeLinkCaption || item.caption || item.snapshot?.caption,
+        media_type: item.mediaType || item.snapshot?.cards?.[0]?.mediaType || 'unknown',
+        media_url: item.mediaUrl || item.imageUrl || item.snapshot?.images?.[0] || item.snapshot?.videos?.[0]?.videoUrl,
+        started_running: item.startDate || item.startedRunning
+          ? new Date(item.startDate || item.startedRunning).toISOString().split('T')[0]
+          : null,
+        is_active: item.isActive !== false && item.endDate === null,
+        platforms: item.platforms || item.publisherPlatforms || ['facebook', 'instagram'],
+      },
+      { onConflict: 'ad_id' }
     )
-
-    if (competitor) {
-      await supabase.from('meta_ads').upsert(
-        {
-          competitor_id: competitor.id,
-          ad_id: item.adId || item.id,
-          page_name: item.pageName,
-          ad_creative_body: item.adCreativeBody || item.body,
-          ad_creative_link_title: item.adCreativeLinkTitle || item.title,
-          ad_creative_link_caption: item.adCreativeLinkCaption || item.caption,
-          media_type: item.mediaType,
-          media_url: item.mediaUrl || item.imageUrl,
-          started_running: item.startedRunning
-            ? new Date(item.startedRunning).toISOString().split('T')[0]
-            : null,
-          is_active: item.isActive !== false,
-          platforms: item.platforms || ['facebook', 'instagram'],
-        },
-        { onConflict: 'ad_id' }
-      )
-    }
   }
 }
 

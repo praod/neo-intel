@@ -17,7 +17,7 @@ export default function CompetitorList({
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [newCompetitor, setNewCompetitor] = useState({ name: '', instagramHandle: '' })
+  const [newCompetitor, setNewCompetitor] = useState({ name: '', instagramHandle: '', facebookPageUrl: '' })
 
   const handleDelete = async (competitorId: string) => {
     if (!confirm('Are you sure you want to remove this competitor?')) return
@@ -56,6 +56,7 @@ export default function CompetitorList({
           brand_id: brandId,
           name: newCompetitor.name,
           instagram_handle: newCompetitor.instagramHandle,
+          facebook_page_url: newCompetitor.facebookPageUrl || null,
         }),
       })
 
@@ -63,7 +64,7 @@ export default function CompetitorList({
         throw new Error('Failed to add competitor')
       }
 
-      setNewCompetitor({ name: '', instagramHandle: '' })
+      setNewCompetitor({ name: '', instagramHandle: '', facebookPageUrl: '' })
       setShowAddForm(false)
       router.refresh()
     } catch (error) {
@@ -125,6 +126,23 @@ export default function CompetitorList({
               />
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Facebook Page URL <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              type="url"
+              value={newCompetitor.facebookPageUrl}
+              onChange={(e) =>
+                setNewCompetitor({
+                  ...newCompetitor,
+                  facebookPageUrl: e.target.value,
+                })
+              }
+              placeholder="https://facebook.com/pagename"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
           <div className="flex gap-2">
             <button
               type="submit"
@@ -137,7 +155,7 @@ export default function CompetitorList({
               type="button"
               onClick={() => {
                 setShowAddForm(false)
-                setNewCompetitor({ name: '', instagramHandle: '' })
+                setNewCompetitor({ name: '', instagramHandle: '', facebookPageUrl: '' })
               }}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
             >
@@ -159,6 +177,9 @@ export default function CompetitorList({
               <div>
                 <p className="font-medium text-gray-900">{competitor.name}</p>
                 <p className="text-sm text-gray-500">@{competitor.instagram_handle}</p>
+                {competitor.facebook_page_url && (
+                  <p className="text-xs text-gray-400 truncate max-w-xs">{competitor.facebook_page_url}</p>
+                )}
               </div>
               <button
                 onClick={() => handleDelete(competitor.id)}

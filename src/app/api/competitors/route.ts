@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { brand_id, name, instagram_handle } = body
+    const { brand_id, name, instagram_handle, facebook_page_url } = body
 
     // Verify user owns the brand
     const { data: brand } = await supabase
@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       brand_id,
       name,
       instagram_handle,
+      facebook_page_url: facebook_page_url || null,
     })
 
     if (error) {

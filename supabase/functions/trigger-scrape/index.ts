@@ -201,24 +201,35 @@ Deno.serve(async (req) => {
       if (brand.competitors && brand.competitors.length > 0) {
         for (const competitor of brand.competitors) {
           try {
-            // Note: Meta Ad Library scraping may require different actor or manual API
-            // This is a placeholder - verify the correct actor ID
+            // Using apify/facebook-ads-scraper - most popular Facebook Ads Library scraper
+            // Prefer facebook_page_url for accurate results, fallback to name search
+            const inputParams: Record<string, any> = {
+              country: 'IN',
+              maxItems: 50,
+            }
+            
+            if (competitor.facebook_page_url) {
+              // Direct page URL scraping - most accurate
+              inputParams.startUrls = [{ url: competitor.facebook_page_url }]
+            } else {
+              // Fallback to search by name
+              inputParams.searchTermOrUrl = competitor.name
+            }
+            
             const runId = await startApifyRun({
-              actorId: 'apify/facebook-ads-library-scraper',
-              input: {
-                searchTerms: competitor.instagram_handle,
-                country: 'IN',
-                limit: 50,
-              },
+              actorId: 'apify/facebook-ads-scraper',
+              input: inputParams,
               webhookUrl,
             })
 
+            // Store competitor_id in metadata for webhook processing
             const { error: jobError } = await supabase.from('scrape_jobs').insert({
               brand_id: brand.id,
               job_type: 'meta_ads',
               status: 'running',
               apify_run_id: runId,
               started_at: new Date().toISOString(),
+              metadata: { competitor_id: competitor.id },
             })
 
             if (jobError) {

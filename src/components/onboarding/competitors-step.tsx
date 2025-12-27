@@ -3,9 +3,9 @@
 import { useState } from 'react'
 
 interface CompetitorsStepProps {
-  data: { competitors: Array<{ name: string; instagramHandle: string }> }
+  data: { competitors: Array<{ name: string; instagramHandle: string; facebookPageUrl?: string }> }
   planLimits: { max_competitors: number }
-  onComplete: (data: { competitors: Array<{ name: string; instagramHandle: string }> }) => void
+  onComplete: (data: { competitors: Array<{ name: string; instagramHandle: string; facebookPageUrl?: string }> }) => void
   onBack: () => void
   loading: boolean
 }
@@ -18,12 +18,12 @@ export default function CompetitorsStep({
   loading,
 }: CompetitorsStepProps) {
   const [competitors, setCompetitors] = useState<
-    Array<{ name: string; instagramHandle: string }>
-  >(data.competitors.length > 0 ? data.competitors : [{ name: '', instagramHandle: '' }])
+    Array<{ name: string; instagramHandle: string; facebookPageUrl?: string }>
+  >(data.competitors.length > 0 ? data.competitors : [{ name: '', instagramHandle: '', facebookPageUrl: '' }])
 
   const addCompetitor = () => {
     if (competitors.length < planLimits.max_competitors) {
-      setCompetitors([...competitors, { name: '', instagramHandle: '' }])
+      setCompetitors([...competitors, { name: '', instagramHandle: '', facebookPageUrl: '' }])
     }
   }
 
@@ -33,7 +33,7 @@ export default function CompetitorsStep({
 
   const updateCompetitor = (
     index: number,
-    field: 'name' | 'instagramHandle',
+    field: 'name' | 'instagramHandle' | 'facebookPageUrl',
     value: string
   ) => {
     const newCompetitors = [...competitors]
@@ -96,6 +96,21 @@ export default function CompetitorsStep({
                   placeholder="competitorhandle"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Facebook Page URL <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                value={competitor.facebookPageUrl || ''}
+                onChange={(e) => updateCompetitor(index, 'facebookPageUrl', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="https://facebook.com/competitorpage"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Providing this helps track their Facebook ads more accurately
+              </p>
             </div>
             {competitors.length > 1 && (
               <button
