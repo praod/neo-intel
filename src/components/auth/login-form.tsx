@@ -16,18 +16,31 @@ export default function LoginForm() {
     setError(null)
     setLoading(true)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      router.push('/dashboard')
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      // Refresh the router to update server-side auth state first
       router.refresh()
+      
+      // Small delay to ensure the session cookie is properly set
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Navigate to dashboard
+      router.push('/dashboard')
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('An unexpected error occurred. Please try again.')
+      setLoading(false)
     }
   }
 

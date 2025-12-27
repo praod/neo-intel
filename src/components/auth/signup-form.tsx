@@ -17,23 +17,36 @@ export default function SignupForm() {
     setError(null)
     setLoading(true)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    })
+      })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      router.push('/dashboard')
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      // Refresh the router to update server-side auth state first
       router.refresh()
+      
+      // Small delay to ensure the session cookie is properly set
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Navigate to dashboard (which will redirect to onboarding for new users)
+      router.push('/dashboard')
+    } catch (err) {
+      console.error('Signup error:', err)
+      setError('An unexpected error occurred. Please try again.')
+      setLoading(false)
     }
   }
 
