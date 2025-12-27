@@ -46,9 +46,21 @@ export default function LoginForm() {
         return
       }
 
-      // Use full page navigation to ensure cookies are properly sent to the server
-      // This is more reliable than router.push for auth flows
-      window.location.href = '/dashboard'
+      // Wait for the auth state to be fully established in cookies
+      // The onAuthStateChange listener confirms when cookies are set
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          subscription.unsubscribe()
+          // Now cookies should be set, safe to navigate
+          window.location.href = '/dashboard'
+        }
+      })
+
+      // Fallback: if auth state change doesn't fire within 2 seconds, navigate anyway
+      setTimeout(() => {
+        subscription.unsubscribe()
+        window.location.href = '/dashboard'
+      }, 2000)
     } catch (err) {
       clearTimeout(timeoutId)
       console.error('Login error:', err)
